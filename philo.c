@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/04 23:16:15 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/04 23:24:27 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -144,13 +144,13 @@ void	*run_code(void *arg)
 	// 	usleep(200);
 	// }
 	// pthread_mutex_unlock(&philo->info.start_banquet);
-	gettimeofday(&last_time, NULL);
 	total_time = 0;
 	ind = 0;
+	gettimeofday(&last_time, NULL);
 	while (1 && ++ind)
 	{
 		gettimeofday(&time, NULL);
-		total_time += (philo->info.time_to_eat) * get_order(philo->head, philo->p_nbr, ind);
+		total_time += (philo->info.time_to_eat) * get_order(philo->head, philo->p_nbr, ind) + ;
 		if (ft_eating(philo, total_time/* , time */))
 			break ;
 		// total_time += (philo->info.time_to_eat);

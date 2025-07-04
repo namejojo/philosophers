@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/04 20:50:55 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/04 22:42:08 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,7 +46,7 @@ int	exit_message(t_info info)
 		(info.notepme <= 0));
 }
 
-int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
+int	ft_eating(t_list *philo, unsigned long total_time/* , struct timeval last_time */)
 {
 	struct timeval	time;
 
@@ -68,7 +68,7 @@ int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
 	philo->info.talky_talk = 0;
 	pthread_mutex_unlock(&philo->info.talky_talk_prot);
 	gettimeofday(&time, NULL);
-	total_time += (time.tv_usec - last_time.tv_usec);
+	// total_time += (time.tv_usec - last_time.tv_usec);
 	printf("%lu %d is eating\n", (total_time) / 1000, philo->p_nbr);
 	usleep(philo->info.time_to_eat);
 	philo->left->fork = 1;
@@ -95,6 +95,7 @@ void	*run_code(void *arg)
 	t_list			*philo;
 	struct timeval	time;
 	struct timeval	last_time;
+	long int		total_time;
 
 	philo = (t_list *)arg;
 	// if (philo->p_nbr != philo->info.nbr_of_philosophers)
@@ -106,22 +107,24 @@ void	*run_code(void *arg)
 	// }
 	// pthread_mutex_unlock(&philo->info.start_banquet);
 	gettimeofday(&last_time, NULL);
+	total_time = 0;
 	ind = 0;
 	while (1 && ++ind)
 	{
 		gettimeofday(&time, NULL);
-		philo->info.total_time += (time.tv_usec);
-		if (ft_eating(philo, philo->info.total_time, time))
+		total_time += (philo->info.time_to_eat) * (philo->p_nbr % 2 - 1 != 0);
+		if (ft_eating(philo, total_time/* , time */))
 			break ;
+		total_time += (philo->info.time_to_eat);
 		last_time = time;
 		gettimeofday(&time, NULL);
-		philo->info.total_time += philo->info.time_to_eat;
-		philo->info.total_time += ((1000000 * (time.tv_usec < last_time.tv_usec) + time.tv_usec - last_time.tv_usec));
+		// total_time += philo->info.time_to_eat;
+		// total_time += ((1000000 * (time.tv_usec < last_time.tv_usec) + time.tv_usec - last_time.tv_usec));
 		if (ft_thinking(philo))
 			break ;
 		last_time = time;
 		gettimeofday(&time, NULL);
-		philo->info.total_time += ((1000000 * (time.tv_usec < last_time.tv_usec) + time.tv_usec - last_time.tv_usec));
+		// total_time += ((1000000 * (time.tv_usec < last_time.tv_usec) + time.tv_usec - last_time.tv_usec));
 		if (ft_sleeping(philo))
 			break ;
 		last_time = time;
@@ -193,7 +196,7 @@ int	init_infosophers(t_info info)
 	philo = init_fork_prot(info.nbr_of_philosophers, info);
 	if (philo == NULL)
 		return (free(nof), 1);
-	get_order(philo);
+	// get_order(philo);
 	ind = -1;
 	while (++ind < info.nbr_of_philosophers)
 	{

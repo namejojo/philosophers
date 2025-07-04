@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/04 22:42:08 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/04 23:16:15 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -44,6 +44,44 @@ int	exit_message(t_info info)
 	return ((info.nbr_of_philosophers <= 0) + (info.time_to_die <= 0) + \
 		(info.time_to_eat <= 0) + (info.time_to_sleep <= 0) + \
 		(info.notepme <= 0));
+}
+
+int	get_order(t_list *philo, int to_find, int loop)
+{
+	int	count;
+	int	last_count;
+	int	group_lcount;
+	int	loop_count;
+	
+	count = -1;
+	loop_count = loop % philo->info.nbr_of_philosophers;
+	while (++count || 1)
+	{
+		group_lcount = philo->info.nbr_of_philosophers / 2;
+		while (group_lcount-- > 0)
+		{
+			if (philo->p_nbr == to_find && loop == 1)
+				return (count);
+			else if (philo->p_nbr == to_find)
+				loop_count--;
+			if (loop_count == 1 && philo->p_nbr == to_find )
+				last_count = count;
+			if (loop_count <= 0)
+				return (count - last_count);
+			// printf("%d\n", philo->p_nbr);
+			// fflush(stdout);
+			philo = philo->right->right;
+		}
+		if (philo->info.nbr_of_philosophers % 2 - 1)
+		{
+			if (2 == philo->p_nbr)
+				philo = philo->left;
+			else if (1 == philo->p_nbr)
+				philo = philo->right;
+		}
+		// printf("\n");
+		// sleep(1);
+	}
 }
 
 int	ft_eating(t_list *philo, unsigned long total_time/* , struct timeval last_time */)
@@ -112,10 +150,10 @@ void	*run_code(void *arg)
 	while (1 && ++ind)
 	{
 		gettimeofday(&time, NULL);
-		total_time += (philo->info.time_to_eat) * (philo->p_nbr % 2 - 1 != 0);
+		total_time += (philo->info.time_to_eat) * get_order(philo->head, philo->p_nbr, ind);
 		if (ft_eating(philo, total_time/* , time */))
 			break ;
-		total_time += (philo->info.time_to_eat);
+		// total_time += (philo->info.time_to_eat);
 		last_time = time;
 		gettimeofday(&time, NULL);
 		// total_time += philo->info.time_to_eat;
@@ -142,6 +180,7 @@ t_list	*init_fork_prot(int nbr, t_info info)
 	if (philo == NULL)
 		return (NULL);
 	head = philo;
+	head->head = head;
 	ind = 1;
 	while (++ind < nbr)
 	{
@@ -149,40 +188,42 @@ t_list	*init_fork_prot(int nbr, t_info info)
 		if (philo->right == NULL)
 			return (ft_lstclear(&head, ind - 1), NULL);
 		philo = philo->right;
+		philo->head = head;
 	}
 	philo->right = ft_lstnew(philo, head, nbr, info);
 	if (philo->right == NULL)
 		return (ft_lstclear(&head, ind - 1), NULL);
 	head->left = philo->right;
+	philo->right->head = head;
 	return (head);
 }
 
-void	get_order(t_list *philo)
-{
-	int	lcount;
-	int	flag;
+// void	get_order(t_list *philo)
+// {
+// 	int	lcount;
+// 	int	flag;
 
-	flag =  philo->info.nbr_of_philosophers % 2 - 1;
-	while (1)
-	{
-		lcount = philo->info.nbr_of_philosophers / 2;
-		while (lcount-- > 0)
-		{
-			printf("%d\n", philo->p_nbr);
-			fflush(stdout);
-			philo = philo->right->right;
-		}
-		if (flag)
-		{
-			if (2 == philo->p_nbr)
-				philo = philo->left;
-			else if (1 == philo->p_nbr)
-				philo = philo->right;
-		}
-		printf("\n");
-		sleep(1);
-	}
-}
+// 	flag =  philo->info.nbr_of_philosophers % 2 - 1;
+// 	while (1)
+// 	{
+// 		lcount = philo->info.nbr_of_philosophers / 2;
+// 		while (lcount-- > 0)
+// 		{
+// 			printf("%d\n", philo->p_nbr);
+// 			fflush(stdout);
+// 			philo = philo->right->right;
+// 		}
+// 		if (flag)
+// 		{
+// 			if (2 == philo->p_nbr)
+// 				philo = philo->left;
+// 			else if (1 == philo->p_nbr)
+// 				philo = philo->right;
+// 		}
+// 		printf("\n");
+// 		sleep(1);
+// 	}
+// }
 
 int	init_infosophers(t_info info)
 {

@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/05 17:57:56 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/05 19:03:44 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,14 +84,38 @@ int	get_order(t_list *philo, int to_find, int loop)
 	}
 }
 
+void	get_ready_to_talk(t_list *philo)
+{
+	if (philo->info.talky_talk == 0)
+	{
+		while (philo->info.talky_talk == 0)
+		{}
+	}
+	pthread_mutex_lock(&philo->info.talky_talk_prot);
+	philo->info.talky_talk = 0;
+	pthread_mutex_unlock(&philo->info.talky_talk_prot);
+}
+
+
 int	ft_thinking(t_list *philo)
 {
 	usleep(philo->info.time_to_sleep);
 	return (0);
 }
 
-int	ft_sleeping(t_list *philo)
+int	ft_sleeping(t_list *philo, unsigned long total_time, struct timeval last_time)
 {
+	struct timeval	time;
+
+	get_ready_to_talk(philo);
+
+	gettimeofday(&time, NULL);
+	total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+	last_time = time;
+
+	printf("%lu %d  is sleeping\n", (total_time) / 1000, philo->p_nbr);
+	philo->info.talky_talk = 1;
+
 	usleep(philo->info.time_to_sleep);
 	return (0);
 }
@@ -107,32 +131,32 @@ int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
 		{}
 		gettimeofday(&time, NULL);
 		total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+		last_time = time;
 	}
 	pthread_mutex_lock(&philo->left->fork_prot);
 	pthread_mutex_lock(&philo->fork_prot);
 	philo->left->fork = 0;
 	philo->fork = 0;
+	get_ready_to_talk(philo);
+
+	gettimeofday(&time, NULL);
+	total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+	last_time = time;
+
+	// printf("%lu %d has taken a fork\n", (total_time) / 1000, philo->p_nbr);
+	// printf("%lu %d has taken a fork\n", (total_time) / 1000, philo->p_nbr);
+	philo->info.talky_talk = 1;
+
 	pthread_mutex_unlock(&philo->fork_prot);
 	pthread_mutex_unlock(&philo->left->fork_prot);
-	
-	if (philo->info.talky_talk == 0)
-	{
-		gettimeofday(&last_time, NULL);
-		while (philo->info.talky_talk == 0)
-		{}
-		gettimeofday(&time, NULL);
-		total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
-		last_time = time;
-	}
-	pthread_mutex_lock(&philo->info.talky_talk_prot);
-	philo->info.talky_talk = 0;
-	pthread_mutex_unlock(&philo->info.talky_talk_prot);
-	
+
+	get_ready_to_talk(philo);
+
 	gettimeofday(&time, NULL);
 	total_time += (time.tv_usec - last_time.tv_usec);
 	printf("%lu %d is eating\n", (total_time) / 1000, philo->p_nbr);
-	philo->info.talky_talk = 1;
 	usleep(philo->info.time_to_eat);
+	philo->info.talky_talk = 1;
 	philo->left->fork = 1;
 	philo->fork = 1;
 	return (0);
@@ -164,18 +188,11 @@ void	*run_code(void *arg)
 		total_time += 1000000  * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
 		last_time = time;
 		ft_eating(philo, total_time, last_time);
-		// total_time += (philo->info.time_to_eat);
-		// gettimeofday(&time, NULL);
-		// total_time += philo->info.time_to_eat;
-		// total_time += ((1000000 * (time.tv_usec < last_time.tv_usec) + time.tv_usec - last_time.tv_usec));
-		// if (ft_thinking(philo))
-			// break ;
-		// last_time = time;
-		// gettimeofday(&time, NULL);
-		// total_time += ((1000000 * (time.tv_usec < last_time.tv_usec) + time.tv_usec - last_time.tv_usec));
-		ft_sleeping(philo);
-			// break ;
-		// last_time = time;
+		
+		gettimeofday(&time, NULL);
+		total_time += 1000000  * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+		last_time = time;
+		ft_sleeping(philo, total_time, last_time);
 	}
 	return (NULL);
 }

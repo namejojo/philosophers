@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 20:19:47 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/04 22:52:59 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/05 15:50:14 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,13 +29,13 @@ typedef struct s_info
 	int				time_to_sleep;
 	int				talky_talk;
 	int				all_alive;
-	long			total_time;
 	pthread_mutex_t	start_banquet;
 	pthread_mutex_t	talky_talk_prot;
 }	t_info;
 
 typedef struct s_list
 {
+	int				die_time;
 	int				p_nbr;
 	int				fork;
 	int				ate;

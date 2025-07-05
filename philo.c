@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/04 23:24:27 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/05 17:57:56 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,7 +24,6 @@ int	int_info(int ac, char **av, t_info *info)
 		info->notepme = ft_atoi(av[5]);
 	info->talky_talk = 1;
 	info->all_alive = 1;
-	info->total_time = 0;
 	if (pthread_mutex_init(&info->start_banquet, NULL))
 		return (1);
 	if (pthread_mutex_init(&info->talky_talk_prot, NULL))
@@ -54,7 +53,7 @@ int	get_order(t_list *philo, int to_find, int loop)
 	int	loop_count;
 	
 	count = -1;
-	loop_count = loop % philo->info.nbr_of_philosophers;
+	loop_count = loop /* % philo->info.nbr_of_philosophers */;
 	while (++count || 1)
 	{
 		group_lcount = philo->info.nbr_of_philosophers / 2;
@@ -68,10 +67,11 @@ int	get_order(t_list *philo, int to_find, int loop)
 				last_count = count;
 			if (loop_count <= 0)
 				return (count - last_count);
-			// printf("%d\n", philo->p_nbr);
+			// printf("%d000 %d\n", count, philo->p_nbr);
 			// fflush(stdout);
 			philo = philo->right->right;
 		}
+		// sleep(1);
 		if (philo->info.nbr_of_philosophers % 2 - 1)
 		{
 			if (2 == philo->p_nbr)
@@ -84,37 +84,6 @@ int	get_order(t_list *philo, int to_find, int loop)
 	}
 }
 
-int	ft_eating(t_list *philo, unsigned long total_time/* , struct timeval last_time */)
-{
-	struct timeval	time;
-
-	while (philo->fork == 0 || philo->left->fork == 0)
-	{
-		
-	}
-	pthread_mutex_lock(&philo->fork_prot);	
-	pthread_mutex_lock(&philo->left->fork_prot);
-	philo->fork = 0;
-	philo->left->fork = 0;
-	pthread_mutex_unlock(&philo->fork_prot);
-	pthread_mutex_unlock(&philo->left->fork_prot);
-	while (philo->info.talky_talk == 0)
-	{
-		
-	}
-	pthread_mutex_lock(&philo->info.talky_talk_prot);
-	philo->info.talky_talk = 0;
-	pthread_mutex_unlock(&philo->info.talky_talk_prot);
-	gettimeofday(&time, NULL);
-	// total_time += (time.tv_usec - last_time.tv_usec);
-	printf("%lu %d is eating\n", (total_time) / 1000, philo->p_nbr);
-	usleep(philo->info.time_to_eat);
-	philo->left->fork = 1;
-	philo->fork = 1;
-	philo->info.talky_talk = 1;
-	return (0);
-}
-
 int	ft_thinking(t_list *philo)
 {
 	usleep(philo->info.time_to_sleep);
@@ -124,6 +93,48 @@ int	ft_thinking(t_list *philo)
 int	ft_sleeping(t_list *philo)
 {
 	usleep(philo->info.time_to_sleep);
+	return (0);
+}
+
+int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
+{
+	struct timeval	time;
+
+	if (philo->fork == 0 || philo->left->fork == 0)
+	{
+		gettimeofday(&last_time, NULL);
+		while (philo->fork == 0 || philo->left->fork == 0)
+		{}
+		gettimeofday(&time, NULL);
+		total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+	}
+	pthread_mutex_lock(&philo->left->fork_prot);
+	pthread_mutex_lock(&philo->fork_prot);
+	philo->left->fork = 0;
+	philo->fork = 0;
+	pthread_mutex_unlock(&philo->fork_prot);
+	pthread_mutex_unlock(&philo->left->fork_prot);
+	
+	if (philo->info.talky_talk == 0)
+	{
+		gettimeofday(&last_time, NULL);
+		while (philo->info.talky_talk == 0)
+		{}
+		gettimeofday(&time, NULL);
+		total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+		last_time = time;
+	}
+	pthread_mutex_lock(&philo->info.talky_talk_prot);
+	philo->info.talky_talk = 0;
+	pthread_mutex_unlock(&philo->info.talky_talk_prot);
+	
+	gettimeofday(&time, NULL);
+	total_time += (time.tv_usec - last_time.tv_usec);
+	printf("%lu %d is eating\n", (total_time) / 1000, philo->p_nbr);
+	philo->info.talky_talk = 1;
+	usleep(philo->info.time_to_eat);
+	philo->left->fork = 1;
+	philo->fork = 1;
 	return (0);
 }
 
@@ -150,22 +161,21 @@ void	*run_code(void *arg)
 	while (1 && ++ind)
 	{
 		gettimeofday(&time, NULL);
-		total_time += (philo->info.time_to_eat) * get_order(philo->head, philo->p_nbr, ind) + ;
-		if (ft_eating(philo, total_time/* , time */))
-			break ;
-		// total_time += (philo->info.time_to_eat);
+		total_time += 1000000  * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
 		last_time = time;
-		gettimeofday(&time, NULL);
+		ft_eating(philo, total_time, last_time);
+		// total_time += (philo->info.time_to_eat);
+		// gettimeofday(&time, NULL);
 		// total_time += philo->info.time_to_eat;
 		// total_time += ((1000000 * (time.tv_usec < last_time.tv_usec) + time.tv_usec - last_time.tv_usec));
-		if (ft_thinking(philo))
-			break ;
-		last_time = time;
-		gettimeofday(&time, NULL);
+		// if (ft_thinking(philo))
+			// break ;
+		// last_time = time;
+		// gettimeofday(&time, NULL);
 		// total_time += ((1000000 * (time.tv_usec < last_time.tv_usec) + time.tv_usec - last_time.tv_usec));
-		if (ft_sleeping(philo))
-			break ;
-		last_time = time;
+		ft_sleeping(philo);
+			// break ;
+		// last_time = time;
 	}
 	return (NULL);
 }
@@ -237,7 +247,7 @@ int	init_infosophers(t_info info)
 	philo = init_fork_prot(info.nbr_of_philosophers, info);
 	if (philo == NULL)
 		return (free(nof), 1);
-	// get_order(philo);
+	// get_order(philo, 10, 10);
 	ind = -1;
 	while (++ind < info.nbr_of_philosophers)
 	{
@@ -267,6 +277,6 @@ int	main(int ac, char **av)
 		return (1);
 	if (pthread_mutex_init(&info.start_banquet, NULL))
 		return (1);
-	printf("nbr_of_philosophers:%d\ntime_to_die:%d\ntime_to_eat:%d\ntime_to_sleep:%d\nnotepme:%d\n\nstarting now\n", info.nbr_of_philosophers, info.time_to_die, info.time_to_eat, info.time_to_sleep, info.notepme);
+	printf("nbr_of_philosophers:%d\ntime_to_die:%d\ntime_to_eat:%d\ntime_to_sleep:%d\nnotepme:%d\n\nstarting now\n", info.nbr_of_philosophers, info.time_to_die / 1000, info.time_to_eat / 1000, info.time_to_sleep / 1000, info.notepme);
 	init_infosophers(info);
 }

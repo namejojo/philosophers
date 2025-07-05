@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/05 20:52:28 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/05 21:48:25 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -89,8 +89,8 @@ void	gulag(t_list *philo, long ttt)
 	struct timeval time;
 	
 	gettimeofday(&time, NULL);
-	printf("how is the time ?%lu, %d\n", 1000000 * (time.tv_sec - philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec + ttt, philo->info.time_to_die);
-	if (1000000 * (time.tv_sec - philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec + ttt >= philo->info.time_to_die)
+	// printf("%d how is the time ?%lu, %d\n", philo->p_nbr, 1000000 * (time.tv_sec - philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec + ttt, philo->info.time_to_die);
+	if ((1000000 * (time.tv_sec - philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec + ttt) / 1000 - 1 >= philo->info.time_to_die / 1000)
 	{
 		philo->info.all_alive = 0;
 		pthread_exit(NULL);
@@ -101,6 +101,7 @@ void	get_ready_to_talk(t_list *philo, long ttt)
 {
 	struct timeval time;
 
+	gulag(philo, ttt);
 	if (philo->info.talky_talk == 0)
 	{
 		gettimeofday(&time, NULL);
@@ -140,6 +141,7 @@ int	ft_sleeping(t_list *philo, unsigned long total_time, struct timeval last_tim
 	printf("%lu %d  is sleeping\n", (total_time) / 1000, philo->p_nbr);
 	philo->info.talky_talk = 1;
 
+	gulag(philo, philo->info.time_to_sleep);
 	usleep(philo->info.time_to_sleep);
 	return (0);
 }
@@ -148,11 +150,12 @@ int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
 {
 	struct timeval	time;
 
+	gulag(philo, 0);
 	if (philo->fork == 0 || philo->left->fork == 0)
 	{
 		gettimeofday(&last_time, NULL);
 		while (philo->fork == 0 || philo->left->fork == 0)
-		{}
+			gulag(philo, 0);
 		gettimeofday(&time, NULL);
 		total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
 		last_time = time;
@@ -162,7 +165,7 @@ int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
 	philo->left->fork = 0;
 	philo->fork = 0;
 
-	get_ready_to_talk(philo, philo->info.time_to_eat);
+	get_ready_to_talk(philo, 0);
 	gettimeofday(&time, NULL);
 
 	total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
@@ -175,7 +178,7 @@ int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
 	pthread_mutex_unlock(&philo->fork_prot);
 	pthread_mutex_unlock(&philo->left->fork_prot);
 
-	get_ready_to_talk(philo, philo->info.time_to_eat);
+	get_ready_to_talk(philo, 0);
 
 	gettimeofday(&time, NULL);
 	total_time += (time.tv_usec - last_time.tv_usec);
@@ -273,11 +276,12 @@ int	init_infosophers(t_info info)
 	{
 		if (pthread_create(nof + ind, NULL, run_code, philo))
 			return (1);
-		pthread_detach(nof[ind]);
 		philo = philo->right;
 	}
 	while(philo->info.all_alive == 1)
-		usleep(1);
+	{}
+	while (ind--)
+		pthread_join(nof[ind], NULL);	
 	return (free(nof), ft_lstclear(&philo, info.nbr_of_philosophers), 0);
 }
 
@@ -295,6 +299,6 @@ int	main(int ac, char **av)
 		return (1);
 	if (pthread_mutex_init(&info.start_banquet, NULL))
 		return (1);
-	printf("nbr_of_philosophers:%d\ntime_to_die:%d\ntime_to_eat:%d\ntime_to_sleep:%d\nnotepme:%d\n\nstarting now\n", info.nbr_of_philosophers, info.time_to_die / 1000, info.time_to_eat / 1000, info.time_to_sleep / 1000, info.notepme);
+	// printf("nbr_of_philosophers:%d\ntime_to_die:%d\ntime_to_eat:%d\ntime_to_sleep:%d\nnotepme:%d\n\nstarting now\n", info.nbr_of_philosophers, info.time_to_die / 1000, info.time_to_eat / 1000, info.time_to_sleep / 1000, info.notepme);
 	init_infosophers(info);
 }

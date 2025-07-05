@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 20:19:47 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/05 15:50:14 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/05 19:45:20 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,6 +39,7 @@ typedef struct s_list
 	int				p_nbr;
 	int				fork;
 	int				ate;
+	struct timeval	lta;
 	struct s_list	*left;
 	struct s_list	*right;
 	struct s_list	*head;

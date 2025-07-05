@@ -6,12 +6,51 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/05 19:03:44 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/05 20:52:28 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
 #include <unistd.h>
+
+// int	get_order(t_list *philo, int to_find, int loop)
+// {
+// 	int	count;
+// 	int	last_count;
+// 	int	group_lcount;
+// 	int	loop_count;
+	
+// 	count = -1;
+// 	loop_count = loop /* % philo->info.nbr_of_philosophers */;
+// 	while (++count || 1)
+// 	{
+// 		group_lcount = philo->info.nbr_of_philosophers / 2;
+// 		while (group_lcount-- > 0)
+// 		{
+// 			if (philo->p_nbr == to_find && loop == 1)
+// 				return (count);
+// 			else if (philo->p_nbr == to_find)
+// 				loop_count--;
+// 			if (loop_count == 1 && philo->p_nbr == to_find )
+// 				last_count = count;
+// 			if (loop_count <= 0)
+// 				return (count - last_count);
+// 			// printf("%d000 %d\n", count, philo->p_nbr);
+// 			// fflush(stdout);
+// 			philo = philo->right->right;
+// 		}
+// 		// sleep(1);
+// 		if (philo->info.nbr_of_philosophers % 2 - 1)
+// 		{
+// 			if (2 == philo->p_nbr)
+// 				philo = philo->left;
+// 			else if (1 == philo->p_nbr)
+// 				philo = philo->right;
+// 		}
+// 		// printf("\n");
+// 		// sleep(1);
+// 	}
+// }
 
 int	int_info(int ac, char **av, t_info *info)
 {
@@ -45,61 +84,46 @@ int	exit_message(t_info info)
 		(info.notepme <= 0));
 }
 
-int	get_order(t_list *philo, int to_find, int loop)
+void	gulag(t_list *philo, long ttt)
 {
-	int	count;
-	int	last_count;
-	int	group_lcount;
-	int	loop_count;
+	struct timeval time;
 	
-	count = -1;
-	loop_count = loop /* % philo->info.nbr_of_philosophers */;
-	while (++count || 1)
+	gettimeofday(&time, NULL);
+	printf("how is the time ?%lu, %d\n", 1000000 * (time.tv_sec - philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec + ttt, philo->info.time_to_die);
+	if (1000000 * (time.tv_sec - philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec + ttt >= philo->info.time_to_die)
 	{
-		group_lcount = philo->info.nbr_of_philosophers / 2;
-		while (group_lcount-- > 0)
-		{
-			if (philo->p_nbr == to_find && loop == 1)
-				return (count);
-			else if (philo->p_nbr == to_find)
-				loop_count--;
-			if (loop_count == 1 && philo->p_nbr == to_find )
-				last_count = count;
-			if (loop_count <= 0)
-				return (count - last_count);
-			// printf("%d000 %d\n", count, philo->p_nbr);
-			// fflush(stdout);
-			philo = philo->right->right;
-		}
-		// sleep(1);
-		if (philo->info.nbr_of_philosophers % 2 - 1)
-		{
-			if (2 == philo->p_nbr)
-				philo = philo->left;
-			else if (1 == philo->p_nbr)
-				philo = philo->right;
-		}
-		// printf("\n");
-		// sleep(1);
+		philo->info.all_alive = 0;
+		pthread_exit(NULL);
 	}
 }
 
-void	get_ready_to_talk(t_list *philo)
+void	get_ready_to_talk(t_list *philo, long ttt)
 {
+	struct timeval time;
+
 	if (philo->info.talky_talk == 0)
 	{
+		gettimeofday(&time, NULL);
 		while (philo->info.talky_talk == 0)
-		{}
+			gulag(philo, ttt);
 	}
 	pthread_mutex_lock(&philo->info.talky_talk_prot);
 	philo->info.talky_talk = 0;
 	pthread_mutex_unlock(&philo->info.talky_talk_prot);
 }
 
-
-int	ft_thinking(t_list *philo)
+int	ft_thinking(t_list *philo, unsigned long total_time, struct timeval last_time)
 {
-	usleep(philo->info.time_to_sleep);
+	struct timeval	time;
+
+	get_ready_to_talk(philo, 0);
+
+	gettimeofday(&time, NULL);
+	total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+	last_time = time;
+
+	printf("%lu %d  is thinking\n", (total_time) / 1000, philo->p_nbr);
+	philo->info.talky_talk = 1;
 	return (0);
 }
 
@@ -107,7 +131,7 @@ int	ft_sleeping(t_list *philo, unsigned long total_time, struct timeval last_tim
 {
 	struct timeval	time;
 
-	get_ready_to_talk(philo);
+	get_ready_to_talk(philo, philo->info.time_to_sleep);
 
 	gettimeofday(&time, NULL);
 	total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
@@ -137,9 +161,10 @@ int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
 	pthread_mutex_lock(&philo->fork_prot);
 	philo->left->fork = 0;
 	philo->fork = 0;
-	get_ready_to_talk(philo);
 
+	get_ready_to_talk(philo, philo->info.time_to_eat);
 	gettimeofday(&time, NULL);
+
 	total_time += 1000000 * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
 	last_time = time;
 
@@ -150,10 +175,11 @@ int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
 	pthread_mutex_unlock(&philo->fork_prot);
 	pthread_mutex_unlock(&philo->left->fork_prot);
 
-	get_ready_to_talk(philo);
+	get_ready_to_talk(philo, philo->info.time_to_eat);
 
 	gettimeofday(&time, NULL);
 	total_time += (time.tv_usec - last_time.tv_usec);
+	philo->lta = time;
 	printf("%lu %d is eating\n", (total_time) / 1000, philo->p_nbr);
 	usleep(philo->info.time_to_eat);
 	philo->info.talky_talk = 1;
@@ -180,19 +206,24 @@ void	*run_code(void *arg)
 	// }
 	// pthread_mutex_unlock(&philo->info.start_banquet);
 	total_time = 0;
-	ind = 0;
+	ind = -1;
 	gettimeofday(&last_time, NULL);
-	while (1 && ++ind)
+	philo->lta = last_time;
+	while (++ind || 1)
 	{
 		gettimeofday(&time, NULL);
 		total_time += 1000000  * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
 		last_time = time;
 		ft_eating(philo, total_time, last_time);
-		
+		if (philo->info.time_to_eat < philo->info.time_to_sleep)
+			ft_thinking(philo, total_time, last_time);
 		gettimeofday(&time, NULL);
 		total_time += 1000000  * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
 		last_time = time;
 		ft_sleeping(philo, total_time, last_time);
+		if (philo->info.time_to_eat >= philo->info.time_to_sleep)
+			ft_thinking(philo, total_time, last_time);
+
 	}
 	return (NULL);
 }
@@ -225,33 +256,6 @@ t_list	*init_fork_prot(int nbr, t_info info)
 	return (head);
 }
 
-// void	get_order(t_list *philo)
-// {
-// 	int	lcount;
-// 	int	flag;
-
-// 	flag =  philo->info.nbr_of_philosophers % 2 - 1;
-// 	while (1)
-// 	{
-// 		lcount = philo->info.nbr_of_philosophers / 2;
-// 		while (lcount-- > 0)
-// 		{
-// 			printf("%d\n", philo->p_nbr);
-// 			fflush(stdout);
-// 			philo = philo->right->right;
-// 		}
-// 		if (flag)
-// 		{
-// 			if (2 == philo->p_nbr)
-// 				philo = philo->left;
-// 			else if (1 == philo->p_nbr)
-// 				philo = philo->right;
-// 		}
-// 		printf("\n");
-// 		sleep(1);
-// 	}
-// }
-
 int	init_infosophers(t_info info)
 {
 	int				ind;
@@ -264,7 +268,6 @@ int	init_infosophers(t_info info)
 	philo = init_fork_prot(info.nbr_of_philosophers, info);
 	if (philo == NULL)
 		return (free(nof), 1);
-	// get_order(philo, 10, 10);
 	ind = -1;
 	while (++ind < info.nbr_of_philosophers)
 	{
@@ -273,10 +276,8 @@ int	init_infosophers(t_info info)
 		pthread_detach(nof[ind]);
 		philo = philo->right;
 	}
-	while(philo->info.all_alive)
-	{
-		
-	}
+	while(philo->info.all_alive == 1)
+		usleep(1);
 	return (free(nof), ft_lstclear(&philo, info.nbr_of_philosophers), 0);
 }
 

@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/06 20:43:19 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/06 21:16:09 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -128,6 +128,8 @@ int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
 
 	while (philo->fork == 0 || philo->left->fork == 0)
 		gulag(philo, total_time);
+
+
 	pthread_mutex_lock(&philo->left->fork_prot);
 	philo->left->fork = 0;
 	pthread_mutex_lock(&philo->fork_prot);
@@ -185,9 +187,9 @@ void	*run_code(void *arg)
 		gettimeofday(&time, NULL);
 		total_time += (MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec) / MILI;
 		last_time = time;
+		ft_eating(philo, total_time, last_time);
 		// philo->info->all_alive = 0;
 		// pthread_exit(NULL);
-		ft_eating(philo, total_time, last_time);
 		gettimeofday(&time, NULL);
 		total_time += (MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec) / MILI;
 		last_time = time;
@@ -253,6 +255,7 @@ int	init_infosophers(t_info *info)
 		printf("closing thread %d\n", ind);
 		pthread_join(nof[ind], NULL);
 	}
+	pthread_mutex_destroy(&philo->info->talky_talk_prot);
 	return (free(nof), ft_lstclear(&philo, info->nbr_of_philosophers), exit(0), 0);
 }
 

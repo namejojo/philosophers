@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/08 00:09:30 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/08 00:43:28 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -164,12 +164,35 @@ void	ft_thinking(t_list *philo, \
 	// 
 // }
 
+int	grab_one_fork(t_list *philo)
+{
+	int	grabed;
+
+	grabed = 0;
+	pthread_mutex_lock(&philo->left->fork_prot);
+	pthread_mutex_lock(&philo->fork_prot);
+	if (philo->left->fork == 1)
+	{
+		philo->left->fork = 0;
+		grabed++;
+	}
+	if (philo->fork == 1)
+	{
+		philo->fork = 0;
+		grabed++;
+	}
+	pthread_mutex_unlock(&philo->left->fork_prot);
+	pthread_mutex_unlock(&philo->fork_prot);
+	return (grabed);
+}
+
 void	pick_up_forks(t_list *philo, \
 	long int total_time, struct timeval last_time)
 {
 	struct timeval	time;
+	int				forks;
 
-	// ft_thinking(philo, total_time, last_time);
+	forks = 0;
 	wait_to_talk(philo, 0, total_time, last_time);
 	printf("%ld %d is thinking\n", total_time / 1000, philo->p_nbr);
 	philo->info->talky_talk = 1;
@@ -181,6 +204,9 @@ void	pick_up_forks(t_list *philo, \
 			time.tv_usec - last_time.tv_usec;
 		last_time = time;
 		time_left_alive(philo, 0, total_time, last_time);
+		forks += grab_one_fork(philo);
+		if (forks == 2)
+			return ;
 	}
 	pthread_mutex_lock(&philo->left->fork_prot);
 	pthread_mutex_lock(&philo->fork_prot);
@@ -247,7 +273,7 @@ void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
 	yummy(philo, total_time, last_time, time);
 }
 
-void	pre_run_code(t_list *philo)
+int	pre_run_code(t_list *philo)
 {
 	if (philo->info->nbr_of_philosophers == 1)
 	{
@@ -259,6 +285,7 @@ void	pre_run_code(t_list *philo)
 		free(philo);
 		pthread_exit(NULL);
 	}
+	return (0);
 }
 
 void	*run_code(void *arg)
@@ -269,10 +296,9 @@ void	*run_code(void *arg)
 	long int		total_time;
 
 	philo = (t_list *)arg;
-	pre_run_code(philo);
+	total_time = pre_run_code(philo);
 	gettimeofday(&last_time, NULL);
 	philo->lta = last_time;
-	total_time = 0;
 	while (philo->info->all_alive)
 	{
 		gettimeofday(&time, NULL);

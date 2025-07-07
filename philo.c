@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/07 23:44:10 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/08 00:09:30 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -190,6 +190,35 @@ void	pick_up_forks(t_list *philo, \
 	pthread_mutex_unlock(&philo->fork_prot);
 }
 
+void	yummy(t_list *philo, long int total_time, \
+	struct timeval last_time, struct timeval time)
+{
+	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
+	time.tv_usec - last_time.tv_usec;
+	last_time = time;
+	printf("%ld %d picked up a fork\n", total_time / 1000, philo->p_nbr);
+	printf("%ld %d picked up a fork\n", total_time / 1000, philo->p_nbr);
+	philo->info->talky_talk = 1;
+	if (philo->info->all_alive == 0)
+	{
+		philo->left->fork = 1;
+		philo->fork = 1;
+		pthread_exit(NULL);
+	}
+	gettimeofday(&time, NULL);
+	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
+		time.tv_usec - last_time.tv_usec;
+	last_time = time;
+	wait_to_talk(philo, 0, total_time, last_time);
+	printf("%ld %d is eating\n", total_time / 1000, philo->p_nbr);
+	philo->info->talky_talk = 1;
+	usleep_func(philo, philo->info->time_to_eat);
+	philo->left->fork = 1;
+	philo->fork = 1;
+	gettimeofday(&philo->lta, NULL);
+	philo->ate++;
+}
+
 void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
 {
 	struct timeval	time;
@@ -213,32 +242,9 @@ void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
 	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
 		time.tv_usec - last_time.tv_usec;
 	last_time = time;
-
 	wait_to_talk(philo, 0, total_time, last_time);
 	gettimeofday(&time, NULL);
-	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
-	last_time = time;
-	printf("%ld %d picked up a fork\n", total_time / 1000, philo->p_nbr);
-	printf("%ld %d picked up a fork\n", total_time / 1000, philo->p_nbr);
-	philo->info->talky_talk = 1;
-
-	if (philo->info->all_alive == 0)
-	{
-		philo->left->fork = 1;
-		philo->fork = 1;
-		pthread_exit(NULL);
-	}
-	gettimeofday(&time, NULL);
-	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
-		time.tv_usec - last_time.tv_usec;
-	last_time = time;
-	wait_to_talk(philo, 0, total_time, last_time);
-	printf("%ld %d is eating\n", total_time / 1000, philo->p_nbr);
-	philo->info->talky_talk = 1;
-	usleep_func(philo, philo->info->time_to_eat);
-	philo->left->fork = 1;
-	philo->fork = 1;
-	gettimeofday(&philo->lta, NULL);
+	yummy(philo, total_time, last_time, time);
 }
 
 void	pre_run_code(t_list *philo)
@@ -275,6 +281,8 @@ void	*run_code(void *arg)
 		last_time = time;
 		time_left_alive(philo, 0, total_time, last_time);
 		ft_eating(philo, total_time, last_time);
+		if (philo->ate == philo->info->notepme && philo->info->notepme != -1)
+			pthread_exit(NULL);
 		gettimeofday(&time, NULL);
 		total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
 			time.tv_usec - last_time.tv_usec;
@@ -327,18 +335,19 @@ int	init_info(int ac, char **av, t_info *info)
 	return (0);
 }
 
-int	exit_message(t_info info)
+int	exit_message(t_info info, int ac)
 {
 	write(2, "invalid number of philosophers\n", \
 		(info.nbr_of_philosophers <= 0) * 32);
 	write(2, "invalid time to die\n", (info.time_to_die <= 0) * 21);
 	write(2, "invalid time to eat\n", (info.time_to_eat <= 0) * 21);
 	write(2, "invalid time to sleep\n", (info.time_to_sleep <= 0) * 23);
-	write(2, "invalid number of times each philosopher must eat \n", \
-		(info.notepme <= 0) * 52);
+	if (ac == 6)
+		write(2, "invalid number of times each philosopher must eat \n", \
+			(info.notepme < 0) * 52);
 	return ((info.nbr_of_philosophers <= 0) + (info.time_to_die <= 0) + \
 		(info.time_to_eat <= 0) + (info.time_to_sleep <= 0) + \
-		(info.notepme <= 0));
+		((info.notepme < 0) * ac == 6));
 }
 
 int	main(int ac, char **av)
@@ -351,11 +360,13 @@ int	main(int ac, char **av)
 		return (write(2, "invalid number of arguments\n", 28));
 	if (init_info(ac, av, &info))
 		return (1);
-	if (exit_message(info))
+	if (exit_message(info, ac))
 		return (1);
 	if (pthread_mutex_init(&(info.talky_talk_prot), NULL))
 		return (1);
 	if (pthread_mutex_init(&(info.all_alive_prot), NULL))
 		return (1);
+	if (info.notepme == 0)
+		return (0);
 	init_infosophers(&info);
 }

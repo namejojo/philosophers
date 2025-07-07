@@ -6,7 +6,7 @@
 #    By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2025/06/12 13:07:24 by jlima-so          #+#    #+#              #
-#    Updated: 2025/07/06 20:51:59 by jlima-so         ###   ########.fr        #
+#    Updated: 2025/07/07 15:11:56 by jlima-so         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -46,7 +46,8 @@ CC=cc
 
 AR=ar rcs
 
-CFLAGS= -pthread -g -Wall -Wextra -Werror
+CFLAGS= -pthread -g -s 
+#-Wall -Wextra -Werror
 
 all: ${PROJ}
 

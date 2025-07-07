@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/06 21:16:09 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/07 17:29:10 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,156 +51,6 @@
 // 		// sleep(1);
 // 	}
 // }
-void	gulag(t_list *philo, long total_time)
-{
-	struct timeval time;
-
-	gettimeofday(&time, NULL);
-	if (MICRO * (time.tv_sec - philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec >= philo->info->time_to_die)
-	{
-		total_time = (MICRO * (time.tv_sec - philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec) / MILI;
-		philo->info->all_alive--;
-		while (philo->info->talky_talk == 0);
-		pthread_mutex_lock(&philo->info->talky_talk_prot);
-		philo->info->talky_talk = 0;
-		pthread_mutex_unlock(&philo->info->talky_talk_prot);
-		if (philo->info->all_alive == 0)
-			printf("%lu %d is dead\n", total_time, philo->p_nbr);
-		pthread_exit(NULL);
-	}
-}
-
-void	get_ready_to_talk(t_list *philo, long total_time)
-{
-	while (philo->info->talky_talk == 0 && philo->info->all_alive)
-		gulag(philo, total_time);
-	if (philo->info->all_alive < 1)
-		pthread_exit(NULL);
-
-	pthread_mutex_lock(&philo->info->talky_talk_prot);
-	philo->info->talky_talk = 0;
-	pthread_mutex_unlock(&philo->info->talky_talk_prot);
-}
-
-int	ft_thinking(t_list *philo, unsigned long total_time, struct timeval last_time)
-{
-	struct timeval	time;
-
-	get_ready_to_talk(philo, total_time);
-
-	gettimeofday(&time, NULL);
-	total_time += (MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec) / MILI;
-	if (philo->info->all_alive)
-		printf("%lu %d is thinking\n", total_time, philo->p_nbr);
-	else
-		pthread_exit(NULL);
-	philo->info->talky_talk = 1;
-	
-	// if (philo->info->time_to_sleep - philo->info->time_to_eat >= 0)
-		// usleep(philo->info->time_to_sleep - philo->info->time_to_eat - 1);
-	// else
-		// usleep(philo->info->time_to_eat - philo->info->time_to_sleep - 1);
-	return (0);
-}
-
-int	ft_sleeping(t_list *philo, unsigned long total_time, struct timeval last_time)
-{
-	struct timeval	time;
-
-	get_ready_to_talk(philo, total_time);
-
-	gettimeofday(&time, NULL);
-	total_time += (MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec) / MILI;
-	if (philo->info->all_alive)
-		printf("%lu %d is sleeping\n", total_time, philo->p_nbr);
-	else
-		pthread_exit(NULL);
-
-	philo->info->talky_talk = 1;
-
-	usleep(philo->info->time_to_sleep);
-	return (0);
-}
-
-int	ft_eating(t_list *philo, unsigned long total_time, struct timeval last_time)
-{
-	struct timeval	time;
-
-	while (philo->fork == 0 || philo->left->fork == 0)
-		gulag(philo, total_time);
-
-
-	pthread_mutex_lock(&philo->left->fork_prot);
-	philo->left->fork = 0;
-	pthread_mutex_lock(&philo->fork_prot);
-	philo->fork = 0;
-	pthread_mutex_unlock(&philo->left->fork_prot);
-	pthread_mutex_unlock(&philo->fork_prot);
-
-	get_ready_to_talk(philo, total_time);
-	gettimeofday(&time, NULL);
-
-	total_time += (MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec) / MILI;
-	last_time = time;
-	if (philo->info->all_alive)
-	{
-		printf("%lu %d has taken a fork\n", total_time, philo->p_nbr);
-		printf("%lu %d has taken a fork\n", total_time, philo->p_nbr);
-	}
-	else
-		pthread_exit(NULL);
-
-	philo->info->talky_talk = 1;
-
-	get_ready_to_talk(philo, total_time);
-	gettimeofday(&time, NULL);
-	philo->lta = time;
-	total_time += (MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec) / MILI;
-	if (philo->info->all_alive)
-		printf("%lu %d is eating\n", total_time, philo->p_nbr);
-	else
-		pthread_exit(NULL);
-	philo->info->talky_talk = 1;
-	usleep(philo->info->time_to_eat);
-	gettimeofday(&time, NULL);
-	philo->lta = time;
-	philo->left->fork = 1;
-	philo->fork = 1;
-	return (0);
-}
-
-void	*run_code(void *arg)
-{
-	int				ind;
-	t_list			*philo;
-	struct timeval	time;
-	struct timeval	last_time;
-	long int		total_time;
-
-	philo = (t_list *)arg;
-	total_time = 0;
-	ind = -1;
-	gettimeofday(&last_time, NULL);
-	philo->lta = last_time;
-	while (++ind || 1)
-	{
-		gettimeofday(&time, NULL);
-		total_time += (MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec) / MILI;
-		last_time = time;
-		ft_eating(philo, total_time, last_time);
-		// philo->info->all_alive = 0;
-		// pthread_exit(NULL);
-		gettimeofday(&time, NULL);
-		total_time += (MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec) / MILI;
-		last_time = time;
-		ft_sleeping(philo, total_time, last_time);
-		gettimeofday(&time, NULL);
-		total_time += (MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec) / MILI;
-		last_time = time;
-		ft_thinking(philo, total_time, last_time);
-	}
-	return (NULL);
-}
 
 t_list	*init_fork_prot(int nbr, t_info *info)
 {
@@ -211,6 +61,8 @@ t_list	*init_fork_prot(int nbr, t_info *info)
 	philo = ft_lstnew(NULL, NULL, 1, info);
 	if (philo == NULL)
 		return (NULL);
+	if (nbr == 1)
+		return (philo);
 	head = philo;
 	ind = 1;
 	while (++ind < nbr)
@@ -227,6 +79,142 @@ t_list	*init_fork_prot(int nbr, t_info *info)
 	return (head);
 }
 
+void	time_left_alive(t_list *philo, long int time_to_sleep, long int	total_time, struct timeval last_time)
+{
+	struct timeval	time;
+	long int		count_down;
+
+	gettimeofday(&time, NULL);
+	count_down = philo->info->time_to_die -
+		(MICRO * (time.tv_sec - philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec);
+	if (count_down - time_to_sleep <= 0 && philo->info->all_alive == 1)
+	{
+
+		pthread_mutex_lock(&philo->info->all_alive_prot);
+		if (philo->info->all_alive == 1)
+		{
+			philo->info->all_alive = 0;
+			usleep(count_down);
+		}
+		else
+			pthread_exit(NULL);
+		pthread_mutex_unlock(&philo->info->all_alive_prot);
+
+		while (philo->info->talky_talk == 0);
+		pthread_mutex_lock(&philo->info->talky_talk_prot);
+		philo->info->talky_talk = 0;
+		pthread_mutex_unlock(&philo->info->talky_talk_prot);
+
+		
+		
+		gettimeofday(&time, NULL);
+		total_time += MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+		last_time = time;
+
+		if (philo->info->all_alive == 0)
+			printf("%ld %d is dead\n", total_time / 1000, philo->p_nbr);
+		pthread_exit(NULL);
+	}
+	if (philo->info->all_alive == 0)
+		pthread_exit(NULL);
+	// return (count_down - time_to_sleep);
+}
+
+void	wait_to_talk(t_list *philo, long int time_to_sleep, long int total_time, struct timeval last_time)
+{
+	struct timeval	time;
+
+	while (philo->info->talky_talk == 0)
+	{
+		gettimeofday(&time, NULL);
+		total_time += MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+		last_time = time;
+		time_left_alive(philo, time_to_sleep, total_time, last_time);
+	}
+	pthread_mutex_lock(&philo->info->talky_talk_prot);
+	philo->info->talky_talk = 0;
+	pthread_mutex_unlock(&philo->info->talky_talk_prot);
+}
+
+void	ft_sleeping(t_list *philo, long int total_time, struct timeval last_time)
+{
+	struct timeval	time;
+
+	gettimeofday(&time, NULL);
+	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+	last_time = time;
+
+	wait_to_talk(philo, 0, total_time, last_time);
+	printf("%ld %d is sleeping\n", total_time / 1000, philo->p_nbr);
+	philo->info->talky_talk = 1;
+	time_left_alive(philo, philo->info->time_to_sleep, total_time, last_time);
+	usleep(philo->info->time_to_sleep);
+}
+
+void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
+{
+	struct timeval	time;
+
+	gettimeofday(&time, NULL);
+	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+	last_time = time;
+
+	wait_to_talk(philo, 0, total_time, last_time);
+	printf("%ld %d is eating\n", total_time / 1000, philo->p_nbr);
+	philo->info->talky_talk = 1;
+
+	usleep(philo->info->time_to_eat);
+	gettimeofday(&philo->lta, NULL);
+}
+
+void	*run_code(void *arg/* or t_list *philo ????*/)
+{
+	pthread_exit(NULL);
+	int				ind;
+	t_list			*philo;
+	struct timeval	time;
+	struct timeval	last_time;
+	long int		total_time;
+
+	philo = (t_list *)arg;
+	free(philo);
+	ind = -1;
+	while (philo->info->talky_talk == 0);
+	gettimeofday(&last_time, NULL);
+	philo->lta = last_time;
+	total_time = 0;
+	// printf("it started\n");
+	if (philo->info->nbr_of_philosophers == 1)
+	{
+		printf("0 %d is thiking\n", philo->p_nbr);
+		usleep(philo->info->time_to_die);
+		printf("%lu %d is dead\n", philo->info->time_to_die / 1000, philo->p_nbr);
+		pthread_exit(NULL);
+	}
+	while (++ind || 1)
+	{
+		gettimeofday(&time, NULL);
+		total_time += MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+		last_time = time;
+		// time_left_alive(philo, 0, total_time, last_time);
+		ft_eating(philo, total_time, last_time);
+
+
+		gettimeofday(&time, NULL);
+		total_time += MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+		last_time = time;
+		// time_left_alive(philo, philo->info->time_to_sleep, total_time, last_time);
+		ft_sleeping(philo, total_time, last_time);
+
+		// pthread_exit(NULL);
+		// gettimeofday(&time, NULL);
+		// total_time = MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+		// last_time = time;
+		// ft_eating(philo, total_time, last_time);
+	}
+	return (NULL);
+}
+
 int	init_infosophers(t_info *info)
 {
 	int				ind;
@@ -240,23 +228,26 @@ int	init_infosophers(t_info *info)
 	if (philo == NULL)
 		return (free(nof), 1);
 	ind = -1;
+	info->talky_talk = 0;
 	while (++ind < info->nbr_of_philosophers)
 	{
-		printf("starting thread %d\n", ind);
+		printf("init thread %d\n", ind + 1);
 		if (pthread_create(nof + ind, NULL, run_code, philo))
-			return (free(nof), ft_lstclear(&philo, ind), 1);
+			return (free(nof), ft_lstclear(&philo, ind + 1), 1);
 		pthread_detach(nof[ind]);
 		philo = philo->right;
 	}
-	while (philo->info->all_alive == 1);
-	usleep(1);
+	info->talky_talk = 1;
+	// while (philo->info->all_alive == 1);
+	// usleep(1);
 	while (ind--)
 	{
-		printf("closing thread %d\n", ind);
 		pthread_join(nof[ind], NULL);
+		// printf("\n%d ended", ind + 1);
 	}
-	pthread_mutex_destroy(&philo->info->talky_talk_prot);
-	return (free(nof), ft_lstclear(&philo, info->nbr_of_philosophers), exit(0), 0);
+	// printf("\n");
+	pthread_mutex_destroy(&info->talky_talk_prot);
+	return (free(nof), ft_lstclear(&philo, info->nbr_of_philosophers), 0);
 }
 
 int	init_info(int ac, char **av, t_info *info)
@@ -295,6 +286,8 @@ int	main(int ac, char **av)
 {
 	t_info	info;
 
+	if (MICRO != 1000000 || MILI != 1000)
+		return (printf("please dont do that thats rude :/"));
 	if (ac < 5 || ac > 6)
 		return (write(2, "invalid number of arguments\n", 28));
 	if (init_info(ac, av, &info))
@@ -303,8 +296,10 @@ int	main(int ac, char **av)
 		return (1);
 	if (pthread_mutex_init(&(info.talky_talk_prot), NULL))
 		return (1);
+	if (pthread_mutex_init(&(info.all_alive_prot), NULL))
+		return (1);
 	// if (pthread_mutex_init(&(info.start_banquet), NULL))
 		// return (1);
-	printf("nbr_of_philosophers:%d\ntime_to_die:%d\ntime_to_eat:%d\ntime_to_sleep:%d\nnotepme:%d\n\nstarting now\n", info.nbr_of_philosophers, info.time_to_die / 1000, info.time_to_eat / 1000, info.time_to_sleep / 1000, info.notepme);
+	printf("\nnbr_of_philosophers:%d\ntime_to_die:%lu\ntime_to_eat:%lu\ntime_to_sleep:%lu\nnotepme:%d\n\nstarting now\n", info.nbr_of_philosophers, info.time_to_die / 1000, info.time_to_eat / 1000, info.time_to_sleep / 1000, info.notepme);
 	init_infosophers(&info);
 }

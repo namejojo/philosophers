@@ -6,18 +6,16 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/25 16:27:10 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/04 18:06:50 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/06 21:50:19 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "../philo.h"
 
-void	ft_putnbr_fd(int n, int fd)
+void	ft_putnbr_fd(unsigned long n, int fd)
 {
-	if (-9 < n && n < 0)
-		write (fd, "-", 1);
-	if (n < -9 || n > 9)
+	if (n > 9)
 		ft_putnbr_fd(n / 10, fd);
-	n = (n % 10) * ((n > 0) - (n < 0)) + 48;
+	n = (n % 10) + 48;
 	write (fd, &n, 1);
 }

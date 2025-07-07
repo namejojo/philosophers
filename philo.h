@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 20:19:47 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/06 16:45:36 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/07 17:09:55 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,13 +31,14 @@ typedef struct s_info
 {
 	int				nbr_of_philosophers;
 	int				notepme;
-	int				time_to_die;
-	int				time_to_eat;
-	int				time_to_sleep;
+	unsigned long	time_to_die;
+	unsigned long	time_to_eat;
+	unsigned long	time_to_sleep;
 	int				talky_talk;
 	int				all_alive;
 	pthread_mutex_t	start_banquet;
 	pthread_mutex_t	talky_talk_prot;
+	pthread_mutex_t	all_alive_prot;
 }	t_info;
 
 typedef struct s_list
@@ -65,7 +66,7 @@ t_list	*ft_lstnew(t_list *left, t_list *right, int nbr, t_info *info);
 void	ft_lstclear(t_list **lst, int nbr);
 
 // writes number nbr into file descriptor fd 
-void	ft_putnbr_fd(int nbr, int fd);
+void	ft_putnbr_fd(unsigned long n, int fd);
 // writes string str into file descriptor fd 
 void	ft_putstr_fd(char *str, int fd);
 

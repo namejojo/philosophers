@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/22 12:14:12 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/06/29 20:39:24 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/07 22:08:45 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,7 +33,7 @@ float	ft_atof(const char *str)
 		loop++;
 	}
 	if (*str >= '.' || *str <= ',')
-	while (loop--)
-		num /= 10;
+		while (loop--)
+			num /= 10;
 	return (num);
 }

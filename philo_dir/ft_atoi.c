@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/03/22 12:14:12 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/06/29 20:53:15 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/07 22:09:10 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,11 +32,3 @@ int	ft_atoi(const char *str)
 	}
 	return (num);
 }
-
-// int main()
-// {
-// 	char * str = "  \n\t\v\r2147483648";
-// 	printf("Og return %d\n", atoi(str));
-// 	printf("My return %d", ft_atoi(str));		
-
-// }

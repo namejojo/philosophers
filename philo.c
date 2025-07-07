@@ -6,12 +6,11 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/08 00:43:28 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/08 00:51:14 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "philo.h"
-#include <unistd.h>
 
 t_list	*init_fork_prot(int nbr, t_info *info)
 {
@@ -48,9 +47,9 @@ void	usleep_func(t_list *philo, long int time_to_sleep)
 
 	gettimeofday(&last_time, NULL);
 	time_left = 0;
-	while (time_left + 10000 < time_to_sleep && philo->info->all_alive)
+	while (time_left + 10 * MILI < time_to_sleep && philo->info->all_alive)
 	{
-		usleep(10 * 1000);
+		usleep(10 * MILI);
 		gettimeofday(&time, NULL);
 		time_left += MICRO * (time.tv_sec - last_time.tv_sec) \
 			+ time.tv_usec - last_time.tv_usec;
@@ -92,7 +91,7 @@ void	time_left_alive(t_list *philo, long int time_to_sleep, \
 	gettimeofday(&time, NULL);
 	count_down = philo->info->time_to_die - (MICRO * (time.tv_sec - \
 		philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec);
-	if (count_down - time_to_sleep <= 1000 && philo->info->all_alive == 1)
+	if (count_down - time_to_sleep <= 1 * MILI && philo->info->all_alive == 1)
 	{
 		time_left_alive_aux(philo, count_down);
 		gettimeofday(&time, NULL);
@@ -100,7 +99,7 @@ void	time_left_alive(t_list *philo, long int time_to_sleep, \
 			time.tv_usec - last_time.tv_usec;
 		last_time = time;
 		if (philo->info->all_alive == 0)
-			printf("%ld %d is dead\n", total_time / 1000, philo->p_nbr);
+			printf("%ld %d is dead\n", total_time / MILI, philo->p_nbr);
 		philo->info->talky_talk = 1;
 		pthread_exit(NULL);
 	}
@@ -138,7 +137,7 @@ void	ft_sleeping(t_list *philo, \
 	+ time.tv_usec - last_time.tv_usec;
 	last_time = time;
 	wait_to_talk(philo, 0, total_time, last_time);
-	printf("%ld %d is sleeping\n", total_time / 1000, philo->p_nbr);
+	printf("%ld %d is sleeping\n", total_time / MILI, philo->p_nbr);
 	philo->info->talky_talk = 1;
 	time_left_alive(philo, philo->info->time_to_sleep, total_time, last_time);
 	usleep_func(philo, philo->info->time_to_sleep);
@@ -154,7 +153,7 @@ void	ft_thinking(t_list *philo, \
 		time.tv_usec - last_time.tv_usec;
 	last_time = time;
 	wait_to_talk(philo, 0, total_time, last_time);
-	printf("%ld %d is thinking\n", total_time / 1000, philo->p_nbr);
+	printf("%ld %d is thinking\n", total_time / MILI, philo->p_nbr);
 	philo->info->talky_talk = 1;
 }
 
@@ -194,7 +193,7 @@ void	pick_up_forks(t_list *philo, \
 
 	forks = 0;
 	wait_to_talk(philo, 0, total_time, last_time);
-	printf("%ld %d is thinking\n", total_time / 1000, philo->p_nbr);
+	printf("%ld %d is thinking\n", total_time / MILI, philo->p_nbr);
 	philo->info->talky_talk = 1;
 	while ((philo->fork == 0 || philo->left->fork == 0) \
 		&& philo->info->all_alive)
@@ -222,8 +221,8 @@ void	yummy(t_list *philo, long int total_time, \
 	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
 	time.tv_usec - last_time.tv_usec;
 	last_time = time;
-	printf("%ld %d picked up a fork\n", total_time / 1000, philo->p_nbr);
-	printf("%ld %d picked up a fork\n", total_time / 1000, philo->p_nbr);
+	printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
+	printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
 	philo->info->talky_talk = 1;
 	if (philo->info->all_alive == 0)
 	{
@@ -236,7 +235,7 @@ void	yummy(t_list *philo, long int total_time, \
 		time.tv_usec - last_time.tv_usec;
 	last_time = time;
 	wait_to_talk(philo, 0, total_time, last_time);
-	printf("%ld %d is eating\n", total_time / 1000, philo->p_nbr);
+	printf("%ld %d is eating\n", total_time / MILI, philo->p_nbr);
 	philo->info->talky_talk = 1;
 	usleep_func(philo, philo->info->time_to_eat);
 	philo->left->fork = 1;
@@ -249,6 +248,7 @@ void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
 {
 	struct timeval	time;
 
+	time_left_alive(philo, 0, total_time, last_time);
 	pthread_mutex_lock(&philo->left->fork_prot);
 	pthread_mutex_lock(&philo->fork_prot);
 	if (philo->left->fork == 1 && philo->fork == 1)
@@ -279,7 +279,7 @@ int	pre_run_code(t_list *philo)
 	{
 		printf("%d %d is thiking\n", 0, philo->p_nbr);
 		usleep(philo->info->time_to_die);
-		printf("%lu %d is dead\n", philo->info->time_to_die / 1000, \
+		printf("%lu %d is dead\n", philo->info->time_to_die / MILI, \
 			philo->p_nbr);
 		philo->info->all_alive = 0;
 		free(philo);
@@ -305,7 +305,6 @@ void	*run_code(void *arg)
 		total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
 			time.tv_usec - last_time.tv_usec;
 		last_time = time;
-		time_left_alive(philo, 0, total_time, last_time);
 		ft_eating(philo, total_time, last_time);
 		if (philo->ate == philo->info->notepme && philo->info->notepme != -1)
 			pthread_exit(NULL);
@@ -346,9 +345,9 @@ int	init_infosophers(t_info *info)
 int	init_info(int ac, char **av, t_info *info)
 {
 	info->nbr_of_philosophers = ft_atoi(av[1]);
-	info->time_to_die = (ft_atoi(av[2])) * 1000;
-	info->time_to_eat = ft_atoi(av[3]) * 1000;
-	info->time_to_sleep = ft_atoi(av[4]) * 1000;
+	info->time_to_die = (ft_atoi(av[2])) * MILI;
+	info->time_to_eat = ft_atoi(av[3]) * MILI;
+	info->time_to_sleep = ft_atoi(av[4]) * MILI;
 	info->notepme = -1;
 	if (ac > 5)
 		info->notepme = ft_atoi(av[5]);

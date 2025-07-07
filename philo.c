@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/07 21:09:49 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/07 21:49:40 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -110,7 +110,7 @@ void	time_left_alive(t_list *philo, long int time_to_sleep, long int	total_time,
 	gettimeofday(&time, NULL);
 	count_down = philo->info->time_to_die -
 		(MICRO * (time.tv_sec - philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec);
-	if (count_down - time_to_sleep <= 0 && philo->info->all_alive == 1)
+	if (count_down - time_to_sleep <= 1000 && philo->info->all_alive == 1)
 	{
 		// fprintf(stderr, "erro\n");
 		pthread_mutex_lock(&philo->info->all_alive_prot);
@@ -207,11 +207,14 @@ void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
 {
 	struct timeval	time;
 
-	// fflush(stdout);
-	if (philo->fork == 0 || philo->left->fork == 0 && philo->info->all_alive)
+	time_left_alive(philo, 0, total_time, last_time);
+	if ((philo->fork == 0 || philo->left->fork == 0) && philo->info->all_alive)
 	{
-		// ft_thinking(philo, total_time, last_time);
-		while (philo->fork == 0 || philo->left->fork == 0 && philo->info->all_alive)
+		ft_thinking(philo, total_time, last_time);
+		gettimeofday(&time, NULL);
+		total_time += MICRO * (time.tv_sec - last_time.tv_sec) + time.tv_usec - last_time.tv_usec;
+		last_time = time;
+		while ((philo->fork == 0 || philo->left->fork == 0) && philo->info->all_alive)
 		{
 			// printf("%ld %d forks %d %d\n", total_time / 1000, philo->p_nbr, philo->fork, philo->left->fork);
 			// usleep(1000);
@@ -221,6 +224,7 @@ void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
 			time_left_alive(philo, 0, total_time, last_time);
 		}
 	}
+	time_left_alive(philo, 0, total_time, last_time);
 	pthread_mutex_lock(&philo->left->fork_prot);
 	pthread_mutex_lock(&philo->fork_prot);
 	wait_to_talk(philo, 0, total_time, last_time);
@@ -236,7 +240,8 @@ void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
 	pthread_mutex_unlock(&philo->fork_prot);
 	if (philo->info->all_alive == 0)
 	{
-		// printf("%d out", philo->p_nbr);
+		philo->left->fork = 1;
+		philo->fork = 1;
 		pthread_exit(NULL);
 	}
 
@@ -247,7 +252,7 @@ void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
 	wait_to_talk(philo, 0, total_time, last_time);
 	time_left_alive(philo, 0, total_time, last_time);
 	// gettimeofday(&philo->lta, NULL);
-	printf("%ld %d is eating for %lu\n", total_time / 1000, philo->p_nbr, philo->info->time_to_eat / 1000);
+	printf("%ld %d is eating\n", total_time / 1000, philo->p_nbr);
 	philo->info->talky_talk = 1;
 	usleep_func(philo, philo->info->time_to_eat);
 	// gettimeofday(&time, NULL);

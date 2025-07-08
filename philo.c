@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/08 00:51:14 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/08 01:44:28 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -157,41 +157,39 @@ void	ft_thinking(t_list *philo, \
 	philo->info->talky_talk = 1;
 }
 
-// void	ft_eating_aux(t_list *philo, long int total_time, \
-	// struct timeval last_time, struct timeval time)
-// {
-	// 
-// }
-
-int	grab_one_fork(t_list *philo)
+void	grab_one_fork(t_list *philo, long int total_time, \
+	struct timeval last_time)
 {
-	int	grabed;
+	struct timeval	time;
 
-	grabed = 0;
+	gettimeofday(&time, NULL);
+	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
+		time.tv_usec - last_time.tv_usec;
 	pthread_mutex_lock(&philo->left->fork_prot);
 	pthread_mutex_lock(&philo->fork_prot);
-	if (philo->left->fork == 1)
+	wait_to_talk(philo, 0, total_time, last_time);
+	if (philo->left->fork == 1 && philo->fork_grabbed > 0)
 	{
 		philo->left->fork = 0;
-		grabed++;
+		philo->fork_grabbed--;
+		printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
 	}
-	if (philo->fork == 1)
+	if (philo->fork == 1 && philo->fork_grabbed > 0)
 	{
-		philo->fork = 0;
-		grabed++;
+		philo->left->fork = 0;
+		philo->fork_grabbed--;
+		printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
 	}
+	philo->info->talky_talk = 1;
 	pthread_mutex_unlock(&philo->left->fork_prot);
 	pthread_mutex_unlock(&philo->fork_prot);
-	return (grabed);
 }
 
 void	pick_up_forks(t_list *philo, \
 	long int total_time, struct timeval last_time)
 {
 	struct timeval	time;
-	int				forks;
 
-	forks = 0;
 	wait_to_talk(philo, 0, total_time, last_time);
 	printf("%ld %d is thinking\n", total_time / MILI, philo->p_nbr);
 	philo->info->talky_talk = 1;
@@ -203,8 +201,9 @@ void	pick_up_forks(t_list *philo, \
 			time.tv_usec - last_time.tv_usec;
 		last_time = time;
 		time_left_alive(philo, 0, total_time, last_time);
-		forks += grab_one_fork(philo);
-		if (forks == 2)
+		if (philo->info->nbr_of_philosophers % 2)
+			grab_one_fork(philo, total_time, last_time);
+		if (philo->fork_grabbed == 0)
 			return ;
 	}
 	pthread_mutex_lock(&philo->left->fork_prot);
@@ -221,8 +220,8 @@ void	yummy(t_list *philo, long int total_time, \
 	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
 	time.tv_usec - last_time.tv_usec;
 	last_time = time;
-	printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
-	printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
+	while (philo->fork_grabbed-- > 0)
+		printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
 	philo->info->talky_talk = 1;
 	if (philo->info->all_alive == 0)
 	{
@@ -242,6 +241,7 @@ void	yummy(t_list *philo, long int total_time, \
 	philo->fork = 1;
 	gettimeofday(&philo->lta, NULL);
 	philo->ate++;
+	philo->fork_grabbed = 2;
 }
 
 void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)

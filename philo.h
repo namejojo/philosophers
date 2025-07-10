@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 20:19:47 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/10 14:55:29 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/10 18:00:27 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,7 +26,9 @@
 # ifndef MSECNDS_IN_SECNDS
 #  define MILI 1000
 # endif 
-
+// all sleep_func 
+// time_left_alive_aux
+// wait to talk
 typedef struct s_info
 {
 	int				nbr_of_philosophers;
@@ -36,6 +38,7 @@ typedef struct s_info
 	long			time_to_sleep;
 	int				talky_talk;
 	int				all_alive;
+	long			init_time;
 	pthread_mutex_t	start_banquet;
 	pthread_mutex_t	talky_talk_prot;
 	pthread_mutex_t	all_alive_prot;

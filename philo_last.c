@@ -1,12 +1,12 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   philo.c                                            :+:      :+:    :+:   */
+/*   philo_last.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/10 17:16:24 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/10 14:56:21 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,6 @@ void	time_left_alive_aux(t_list *philo, long int count_down)
 	if (philo->info->all_alive == 1)
 	{
 		philo->info->all_alive = 0;
-		pthread_mutex_unlock(&philo->info->all_alive_prot);
 		usleep(count_down);
 	}
 	else
@@ -75,6 +74,7 @@ void	time_left_alive_aux(t_list *philo, long int count_down)
 		pthread_mutex_unlock(&philo->info->all_alive_prot);
 		pthread_exit(NULL);
 	}
+	pthread_mutex_unlock(&philo->info->all_alive_prot);
 	while (philo->info->talky_talk == 0)
 		usleep(0);
 	pthread_mutex_lock(&philo->info->talky_talk_prot);
@@ -89,9 +89,6 @@ void	time_left_alive(t_list *philo, long int time_to_sleep, \
 	long int		count_down;
 
 	gettimeofday(&time, NULL);
-	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
-		time.tv_usec - last_time.tv_usec;
-	last_time = time;
 	count_down = philo->info->time_to_die - (MICRO * (time.tv_sec - \
 		philo->lta.tv_sec) + time.tv_usec - philo->lta.tv_usec);
 	if (count_down - time_to_sleep <= 1 * MILI && philo->info->all_alive == 1)
@@ -143,117 +140,135 @@ void	ft_sleeping(t_list *philo, \
 	printf("%ld %d is sleeping\n", total_time / MILI, philo->p_nbr);
 	philo->info->talky_talk = 1;
 	time_left_alive(philo, philo->info->time_to_sleep, total_time, last_time);
-	usleep_func(philo, philo->info->time_to_sleep - 1 * MILI);
+	usleep_func(philo, philo->info->time_to_sleep);
 }
 
-void	even_pick_up_forks(t_list *philo, long int total_time, struct timeval last_time, struct timeval time)
+// void	odd_thinking(t_list *philo, \
+	// long int total_time, struct timeval last_time)
+// {
+	// long int		tts;
+	// struct timeval	time;
+// 
+	// tts = 0;
+	// while (philo->left->fork_time == -1 || philo->fork_time == -1)
+		// time_left_alive(philo, 0, total_time, last_time);
+	// if (philo->left->fork_time > philo->fork_time)
+		// tts = philo->fork_time - philo->info->time_to_eat;
+	// else
+		// tts = philo->left->fork_time - philo->info->time_to_eat;
+	// if (tts <= 0)
+		// return ;
+	// time_left_alive(philo, tts, total_time, last_time);
+	// wait_to_talk(philo, tts, total_time, last_time);
+		// gettimeofday(&time, NULL);
+	// total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
+		// time.tv_usec - last_time.tv_usec;
+	// printf("%ld %d is thinking for %ld \n", total_time / MILI, philo->p_nbr, tts / 1000);
+	// philo->info->talky_talk = 1;
+	// usleep_func(philo, tts - MILI);
+// }
+
+// void	ft_thinking(t_list *philo, \
+	// long int total_time, struct timeval last_time)
+// {
+	// struct timeval	time;
+// 
+	// gettimeofday(&time, NULL);
+	// total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
+		// time.tv_usec - last_time.tv_usec;
+	// last_time = time;
+	// if (philo->info->nbr_of_philosophers % 2)
+		// return (odd_thinking(philo, total_time, last_time));
+	// wait_to_talk(philo, 0, total_time, last_time);
+	// printf("%ld %d is thinking\n", total_time / MILI, philo->p_nbr);
+	// philo->info->talky_talk = 1;
+// }b
+
+void	grab_one_fork(t_list *philo, long int total_time, \
+	struct timeval last_time)
 {
-	wait_to_talk(philo, 0, total_time, last_time);	
-	printf("%ld %d is thinking\n", total_time / MILI, philo->p_nbr);
-	philo->info->talky_talk = 1;
-	pthread_mutex_lock(&philo->fork_prot);
+	struct timeval	time;
+
+	gettimeofday(&time, NULL);
+	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
+		time.tv_usec - last_time.tv_usec;
 	pthread_mutex_lock(&philo->left->fork_prot);
-	while (philo->left->fork == 0 || philo->fork == 0)
+	pthread_mutex_lock(&philo->fork_prot);
+	wait_to_talk(philo, 0, total_time, last_time);
+	if (philo->left->fork == 1 && philo->fork_grabbed > 0)
 	{
-		pthread_mutex_unlock(&philo->fork_prot);
-		pthread_mutex_unlock(&philo->left->fork_prot);
+		philo->left->fork = 0;
+		philo->fork_grabbed--;
+		printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
+	}
+	if (philo->fork == 1 && philo->fork_grabbed > 0)
+	{
+		philo->left->fork = 0;
+		philo->fork_grabbed--;
+		printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
+	}
+	philo->info->talky_talk = 1;
+	pthread_mutex_unlock(&philo->left->fork_prot);
+	pthread_mutex_unlock(&philo->fork_prot);
+}
+
+void	pick_up_forks(t_list *philo, \
+	long int total_time, struct timeval last_time)
+{
+	struct timeval	time;
+
+	ft_thinking(philo, total_time, last_time);
+	while ((philo->fork == 0 || philo->left->fork == 0) \
+		&& philo->info->all_alive)
+	{
 		gettimeofday(&time, NULL);
 		total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
 			time.tv_usec - last_time.tv_usec;
 		last_time = time;
 		time_left_alive(philo, 0, total_time, last_time);
-		pthread_mutex_lock(&philo->fork_prot);
-		pthread_mutex_lock(&philo->left->fork_prot);
+		if (philo->info->nbr_of_philosophers % 2)
+			grab_one_fork(philo, total_time, last_time);
+		if (philo->fork_grabbed == 0)
+			return ;
 	}
+	pthread_mutex_lock(&philo->left->fork_prot);
+	pthread_mutex_lock(&philo->fork_prot);
 	philo->left->fork = 0;
 	philo->fork = 0;
-	pthread_mutex_unlock(&philo->fork_prot);
 	pthread_mutex_unlock(&philo->left->fork_prot);
-	wait_to_talk(philo, 0, total_time, last_time);
-	// printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
-	// printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
-	philo->info->talky_talk = 1;
+	pthread_mutex_unlock(&philo->fork_prot);
 }
 
-void	get_fork(t_list *philo, int *f_count, long int total_time, struct timeval last_time)
+void	yummy(t_list *philo, long int total_time, \
+	struct timeval last_time, struct timeval time)
 {
-	(*f_count)++;
-	philo->fork = 0;
-	wait_to_talk(philo, 0, total_time, last_time);
-	// printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
+	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
+	time.tv_usec - last_time.tv_usec;
+	last_time = time;
+	while (philo->fork_grabbed-- > 0)
+		printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
+	philo->fork_time = total_time;
 	philo->info->talky_talk = 1;
-}
-
-
-void	get_all_forks(t_list *philo, long int total_time, struct timeval last_time)
-{
-	int	f_count;
-	struct timeval	time;
-
-	f_count = 0;
-	while (f_count != 2)
+	if (philo->info->all_alive == 0)
 	{
-		gettimeofday(&time, NULL);
-		total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
-			time.tv_usec - last_time.tv_usec;
-		last_time = time;
-		time_left_alive(philo, 0, total_time, last_time);
-		pthread_mutex_lock(&philo->fork_prot);
-		if (philo->fork == 1)
-			get_fork(philo, &f_count, total_time, last_time);
-		pthread_mutex_unlock(&philo->fork_prot);
-		pthread_mutex_lock(&philo->left->fork_prot);
-		if (philo->left->fork == 1)
-			get_fork(philo->left, &f_count, total_time, last_time);
-		pthread_mutex_unlock(&philo->left->fork_prot);
+		philo->left->fork = 1;
+		philo->fork = 1;
+		pthread_exit(NULL);
 	}
-}
-
-void	odd_pick_up_forks(t_list *philo, long int total_time, struct timeval last_time)
-{
-	t_list			*fork_not_on_table;
-	struct timeval	time;
-
-	fork_not_on_table = philo;
-	if (philo->left->fork == 0)
-		fork_not_on_table = philo->left;
-	wait_to_talk(philo, 0, total_time, last_time);
-	printf("%ld %d is thinking\n", total_time / MILI, philo->p_nbr);
-	philo->info->talky_talk = 1;
-	time_left_alive(philo, philo->info->time_to_sleep, total_time, last_time);
-	usleep_func(philo, philo->info->time_to_sleep);
 	gettimeofday(&time, NULL);
 	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
 		time.tv_usec - last_time.tv_usec;
 	last_time = time;
-	while (fork_not_on_table == 0)
-		time_left_alive(philo, 0, total_time, last_time);
-	get_all_forks(philo, total_time, last_time);
-}
-
-void	ft_thinking(t_list *philo, long int total_time, struct timeval last_time)
-{
-	struct timeval	time;
-	struct timeval	fork_time;
-	long			tts;
-	long			lf;
-	long			rf;
-
-	if (philo->info->nbr_of_philosophers % 2 == 0)
-		return (even_pick_up_forks(philo, total_time, last_time, last_time));
-	if (philo->left->fork == 1 || philo->fork == 1)
-		return (odd_pick_up_forks(philo, total_time, last_time));
-	// odd number of philo and pick up both forks at the same time
-	gettimeofday(&time, NULL);
-	rf = MICRO * philo->fork_time.tv_sec + philo->fork_time.tv_usec;
-	lf = MICRO * philo->left->fork_time.tv_sec + philo->left->fork_time.tv_usec;
-	tts = time.tv_sec * MICRO + time.tv_usec - lf * (lf < rf) - rf * (lf >= rf);
-	tts -= philo->info->time_to_die;
-	if (tts <= 0)
-		return ;
 	wait_to_talk(philo, 0, total_time, last_time);
-	printf("%ld %d is thinking\n", total_time / MILI, philo->p_nbr);
+	printf("%ld %d is eating\n", total_time / MILI, philo->p_nbr);
 	philo->info->talky_talk = 1;
+	usleep_func(philo, philo->info->time_to_eat);
+	philo->left->fork = 1;
+	philo->fork = 1;
+	gettimeofday(&philo->lta, NULL);
+	philo->ate++;
+	philo->fork_grabbed = 2;
+	philo->fork_time = -1;
 }
 
 void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
@@ -261,37 +276,28 @@ void	ft_eating(t_list *philo, long int total_time, struct timeval last_time)
 	struct timeval	time;
 
 	time_left_alive(philo, 0, total_time, last_time);
-	pthread_mutex_lock(&philo->fork_prot);
 	pthread_mutex_lock(&philo->left->fork_prot);
+	pthread_mutex_lock(&philo->fork_prot);
 	if (philo->left->fork == 1 && philo->fork == 1)
 	{
 		philo->left->fork = 0;
 		philo->fork = 0;
 		pthread_mutex_unlock(&philo->left->fork_prot);
 		pthread_mutex_unlock(&philo->fork_prot);
-		wait_to_talk(philo, 0, total_time, last_time);
-		// printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
-		// printf("%ld %d picked up a fork\n", total_time / MILI, philo->p_nbr);
-		philo->info->talky_talk = 1;		
 	}
 	else
 	{
 		pthread_mutex_unlock(&philo->left->fork_prot);
 		pthread_mutex_unlock(&philo->fork_prot);
-		ft_thinking(philo, total_time, last_time);
+		pick_up_forks(philo, total_time, last_time);
 	}
-	wait_to_talk(philo, 0, total_time, last_time);
-		gettimeofday(&time, NULL);
+	gettimeofday(&time, NULL);
 	total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \
 		time.tv_usec - last_time.tv_usec;
 	last_time = time;
-	printf("%ld %d is eating\n", total_time / MILI, philo->p_nbr);
-	philo->info->talky_talk = 1;
-	usleep_func(philo, philo->info->time_to_eat);
-	philo->ate++;
-	philo->left->fork = 1;
-	philo->fork = 1;
-	gettimeofday(&philo->lta, NULL);
+	wait_to_talk(philo, 0, total_time, last_time);
+	gettimeofday(&time, NULL);
+	yummy(philo, total_time, last_time, time);
 }
 
 int	pre_run_code(t_list *philo)
@@ -327,7 +333,7 @@ void	*run_code(void *arg)
 			time.tv_usec - last_time.tv_usec;
 		last_time = time;
 		ft_eating(philo, total_time, last_time);
-		if (philo->ate >= philo->info->notepme && philo->info->notepme != -1)
+		if (philo->ate == philo->info->notepme && philo->info->notepme != -1)
 			pthread_exit(NULL);
 		gettimeofday(&time, NULL);
 		total_time += MICRO * (time.tv_sec - last_time.tv_sec) + \

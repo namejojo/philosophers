@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 14:24:31 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/15 15:02:48 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/15 15:03:41 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -324,7 +324,7 @@ int	init_infosophers(t_info *info)
 	{
 		if (pthread_create(nof + ind, NULL, run_code, philo))
 			return (free(nof), ft_lstclear(&philo, ind + 1), 1);
-		printf("new philo %d\n", philo->p_nbr);
+		// printf("new philo %d\n", philo->p_nbr);
 		if (philo->p_nbr == 2)
 		{
 			philo = philo->left;

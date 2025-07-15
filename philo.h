@@ -6,7 +6,7 @@
 /*   By: jlima-so <jlima-so@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/06/29 20:19:47 by jlima-so          #+#    #+#             */
-/*   Updated: 2025/07/10 18:00:27 by jlima-so         ###   ########.fr       */
+/*   Updated: 2025/07/15 11:23:59 by jlima-so         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ typedef struct s_info
 {
 	int				nbr_of_philosophers;
 	int				notepme;
+	int				dead;
 	long			time_to_die;
 	long			time_to_eat;
 	long			time_to_sleep;
